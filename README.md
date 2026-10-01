@@ -138,11 +138,13 @@ packages/
 
 ## Testnet proof
 
-Create and send were run on testnet. This topic is the bounty proof:
+Demo on testnet. The topic was created with memo `getting-started-room`, updated with an HIP-991 fee, then deleted at the end of the demo. Both messages stay on the mirror:
 
-https://hashscan.io/testnet/topic/0.0.10810409
+https://hashscan.io/testnet/topic/0.0.10813895
 
-Memo `hello future`. One message: `hello hedera`. Admin key and submit key are set.
+Messages: `hello hedera`, then `hello future`. Payer `0.0.4807603`.
+
+Video: https://youtu.be/UQEzfHnIIC0
 
 ## Troubleshooting
 
