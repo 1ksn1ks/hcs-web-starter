@@ -90,8 +90,8 @@ const HELP = {
   send: {
     title: 'Send message',
     wallet: 'Wallet: yes. HashPack signs this one note. Reads do not.',
-    body: 'This puts one note in the mailbox you created.\n\nTopic id must be the 0.0.xxxxx from Create topic.\nHashPack pays and signs as the payer. If you set a submit key on Create, you must also paste that private submit key here — HashPack alone is not enough and the send will fail.\nSeveral submit keys: one per line, same threshold you used on create.\n\nThe playground wraps your text as JSON: { type, text, from, at }.\nAnyone can read it. This helper does not encrypt.\n\nThe messages panel stays open and logs the note. Subscribe first for live chat.',
-    example: 'Need a topic id from step 2. If the topic has a submit key, paste it. Type hello hedera. Press Send, approve HashPack. Watch the right panel.',
+    body: 'This puts one note in the mailbox you created.\n\nTopic id must be the 0.0.xxxxx from Create topic.\nHashPack pays and signs as the payer. If you set a submit key on Create, you must also paste that private submit key here — HashPack alone is not enough and the send will fail.\nSeveral submit keys: one per line, same threshold you used on create.\n\nThe playground wraps your text as JSON: { type, text, from, at }.\nAnyone can read it. This helper does not encrypt.\n\nSend does not put the note on the right. Press 5. Get messages after a few seconds. Subscribe is the only way new notes appear by themselves.',
+    example: 'Need a topic id from step 2. If the topic has a submit key, paste it. Type hello hedera. Press Send and approve HashPack. The right panel stays unchanged. Then press 5. Get messages.',
     call: 'await send_message(topicId, JSON.stringify({ text: "hello" }), submitPrivateKey);',
   },
   read: {
@@ -147,6 +147,22 @@ function messageBody(msg) {
   } catch {
     return String(msg);
   }
+}
+
+function dedupeMessages(list) {
+  const seen = new Set();
+  const out = [];
+  for (const row of list) {
+    if (!row || row.kind === 'log' || row.sequence_number == null || row.sequence_number === '') {
+      out.push(row);
+      continue;
+    }
+    const id = String(row.sequence_number);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(row);
+  }
+  return out;
 }
 
 export default function Playground() {
@@ -368,16 +384,7 @@ export default function Playground() {
         submitKeys.map((row) => row.trim()).filter(Boolean)
       );
       setMessage('');
-      setMessageList((list) => [
-        ...list,
-        { from: account, text, created: Date.now() },
-      ]);
-      pushToast('Message sent', 'HashPack signed the note. It stays in the messages panel on the right.');
-      get_messages(topicId)
-        .then((result) => {
-          if (result.messages?.length) setMessageList(result.messages);
-        })
-        .catch(() => {});
+      pushToast('Message sent', 'HashPack signed the note. It is not shown yet. Press Get messages to load it.');
     } catch (err) {
       setError(err.message || String(err));
       pushToast('Send failed', err.message || String(err), 'err');
@@ -396,10 +403,10 @@ export default function Playground() {
     setError('');
     try {
       const result = await get_messages(topicId);
-      setMessageList((list) => [
+      setMessageList((list) => dedupeMessages([
         ...(result.messages || []),
         ...list.filter((row) => row.kind === 'log'),
-      ]);
+      ]));
       setPanelItems({ kind: 'messages', list: result.messages });
       pushToast(
         'Messages loaded',
@@ -427,15 +434,22 @@ export default function Playground() {
       const sub = await subscribe_to_topic(
         topicId,
         (msg) => {
-          setMessageList((list) => [...list, msg]);
+          setMessageList((list) => {
+            if (list.some((row) => String(row.sequence_number) === String(msg.sequence_number))) return list;
+            const rest = list.filter((row) => row.sequence_number || row.kind === 'log' || row.text !== msg.text);
+            return dedupeMessages([...rest, msg]);
+          });
         },
         (err) => setError(err.message || String(err))
       );
       window.__hcsSub = sub;
-      setMessageList((list) => [
-        ...(sub.messages || []),
-        ...list.filter((row) => row.kind === 'log'),
-      ]);
+      setMessageList((list) => {
+        const logs = list.filter((row) => row.kind === 'log');
+        const history = sub.messages || [];
+        const seen = new Set(history.map((m) => String(m.sequence_number)));
+        const newer = list.filter((row) => row.sequence_number != null && !seen.has(String(row.sequence_number)));
+        return dedupeMessages([...history, ...newer, ...logs]);
+      });
       setPanelItems({ kind: 'messages', list: sub.messages });
       setSubscribed(true);
       pushToast('Subscribed', 'Live panel stays open. New notes appear on the right every few seconds. Press Stop when you leave.');
@@ -660,7 +674,7 @@ export default function Playground() {
         );
       }
       return (
-        <article className="bubble" key={msg.sequence_number ?? `msg-${i}`}>
+        <article className="bubble" key={`seq-${msg.sequence_number ?? 'local'}-${i}`}>
           <div className="bubble-meta">{String(msg.from || msg.payer || '')} · #{msg.sequence_number ?? ''} · {msg.created ? new Date(msg.created).toLocaleString() : ''}</div>
           <pre className="bubble-body">{messageBody(msg)}</pre>
         </article>
@@ -682,7 +696,7 @@ export default function Playground() {
           <div className="top-actions">
             <div className="mono">{MIRROR_BASE.replace('https://', '')}</div>
             <div className="account">{account || 'Not connected'}</div>
-            <div className={`status-pill ${subscribed ? 'online' : ''}`}>{subscribed ? 'subscribed' : 'offline'}</div>
+            {subscribed ? <div className="status-pill online">subscribed</div> : null}
             {!account ? (
               <button className="btn primary" type="button" onClick={onConnect} disabled={connecting}>
                 {connecting ? 'Connecting…' : 'Connect Wallet'}
