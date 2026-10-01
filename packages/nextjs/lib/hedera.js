@@ -28,6 +28,7 @@ import {
   PrivateKey,
   TopicCreateTransaction,
   TopicUpdateTransaction,
+  TopicDeleteTransaction,
   AccountId,
   CustomFixedFee,
   KeyList,
@@ -278,6 +279,33 @@ export async function update_topic({
   await sign_with_keys(transaction, adminPrivates);
 
   await with_wallet_timeout(transaction.executeWithSigner(activeSigner), 'Update topic');
+}
+
+/**
+ * Delete a topic. Wallet pays. The admin private key must sign.
+ *
+ * A topic with no admin key cannot be deleted. Several admin keys: pass
+ * enough private keys to meet the threshold from create (array or newline
+ * list). Old messages stay on the mirror. New sends and updates will fail.
+ *
+ * @param {string} topicId e.g. "0.0.123456"
+ * @param {string | string[]} adminKey admin private key(s)
+ * @example
+ * await delete_topic("0.0.123456", adminPrivateKey);
+ */
+export async function delete_topic(topicId, adminKey) {
+  const activeSigner = requireSigner();
+  const id = String(topicId || '').trim();
+  if (!id) throw new Error('topic id required');
+  const adminPrivates = parse_private_keys(adminKey);
+  if (!adminPrivates.length) throw new Error('admin private key required to delete a topic');
+
+  let transaction = new TopicDeleteTransaction().setTopicId(TopicId.fromString(id));
+  transaction = await freeze_for_wallet(transaction, activeSigner);
+  await sign_with_keys(transaction, adminPrivates);
+
+  await with_wallet_timeout(transaction.executeWithSigner(activeSigner), 'Delete topic');
+  return id;
 }
 
 /**
