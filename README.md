@@ -12,21 +12,30 @@ Official scaffold-hbar templates talk to Hedera through EVM wallets (RainbowKit 
 
 ## Steal these
 
+Copy these two files into your app. Leave the rest.
+
+| File | Path |
+|---|---|
+| HCS helpers | `packages/nextjs/lib/hedera.js` |
+| HashPack wallet | `packages/nextjs/lib/wallet.js` |
+
+`hedera.js` imports `./wallet.js`, so keep them in the same folder (or fix that import). Each function below is an export inside `packages/nextjs/lib/hedera.js`.
+
 | Copy this | When | Wallet |
 |---|---|---|
-| `lib/wallet.js` | HashPack / WalletConnect connect + signer | — |
 | `generate_private_and_public_key` | Local ED25519 pair (topic admin / submit key) | no |
 | `create_topic` | New HCS topic (mailbox). Optional admin KeyList + submit key | yes |
 | `update_topic` | Memo / keys / HIP-991 paid-topic fees | yes + admin key(s) |
+| `delete_topic` | Close a topic. Needs the admin key. Old messages stay readable | yes + admin key(s) |
 | `send_message` | Submit one payload (pass submit key if the topic has one) | yes |
 | `get_messages` | One-shot mirror history | no |
 | `subscribe_to_topic` | History + 3s live poll | no |
 | `get_topic_info` | Topic record | no |
 | `get_account_nfts` | Account NFT list | no |
 
-Writes need a wallet. Reads use the mirror. Keep `wallet.js` network and `MIRROR_BASE` in sync.
+Writes need a wallet. Reads use the mirror. Keep `packages/nextjs/lib/wallet.js` on the same network as HashPack.
 
-**Do not copy `Playground.jsx` into production apps.** That file is the demo UI. Copy `hedera.js` and `wallet.js`.
+**Do not copy** `packages/nextjs/components/Playground.jsx`. That file is only the demo UI.
 
 ## Prerequisites
 
@@ -59,7 +68,8 @@ Copy the HashScan topic link after step 3. That is the bounty proof.
 ## Steal a function
 
 ```js
-import { create_topic } from './lib/hedera.js';
+// from packages/nextjs/lib/hedera.js (it imports ./wallet.js next to it)
+import { create_topic, send_message } from './lib/hedera.js';
 
 const topicId = await create_topic({
   memo: 'my-room',
@@ -107,10 +117,10 @@ Never commit `.env`, `.env.local`, or private keys.
 
 ```
 packages/
-  nextjs/                 frontend — steal lib/hedera.js + lib/wallet.js
-    lib/hedera.js         all HCS helpers
-    lib/wallet.js         HashPack connector
-    components/Playground.jsx   demo UI only
+  nextjs/                 frontend
+    lib/hedera.js         copy this — every HCS function
+    lib/wallet.js         copy this — HashPack connect + signer
+    components/Playground.jsx   demo only, do not copy
   hardhat/                compiles so the monorepo gate is green
     contracts/            HCS does not need Solidity; placeholder only
 ```
@@ -128,9 +138,11 @@ packages/
 
 ## Testnet proof
 
-After you create a topic or send a message, copy the HashScan link (testnet) and keep it for the bounty form.
+Create and send were run on testnet. This topic is the bounty proof:
 
-Example: `https://hashscan.io/testnet/topic/0.0.xxxxx`
+https://hashscan.io/testnet/topic/0.0.10810409
+
+Memo `hello future`. One message: `hello hedera`. Admin key and submit key are set.
 
 ## Troubleshooting
 
