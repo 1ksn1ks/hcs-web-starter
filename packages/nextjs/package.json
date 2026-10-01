@@ -1,0 +1,25 @@
+{
+  "name": "@hcs-web-starter/nextjs",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0 --port 3000",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0 --port 3000",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@hashgraph/hedera-wallet-connect": "^2.0.4",
+    "@hashgraph/sdk": "^2.80.0",
+    "@walletconnect/modal": "^2.7.0",
+    "buffer": "^6.0.3",
+    "next": "^15.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.3.0"
+  }
+}

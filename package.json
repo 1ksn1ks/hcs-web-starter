@@ -1,0 +1,27 @@
+{
+  "name": "hcs-web-starter",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run next:dev",
+    "lint": "npm run next:lint && npm run hardhat:test",
+    "format": "prettier --write .",
+    "next:dev": "npm run dev --workspace=@hcs-web-starter/nextjs",
+    "next:build": "npm run build --workspace=@hcs-web-starter/nextjs",
+    "next:start": "npm run start --workspace=@hcs-web-starter/nextjs",
+    "next:lint": "npm run lint --workspace=@hcs-web-starter/nextjs",
+    "hardhat:compile": "npm run compile --workspace=@hcs-web-starter/hardhat",
+    "hardhat:test": "npm run test --workspace=@hcs-web-starter/hardhat",
+    "hardhat:deploy": "npm run deploy --workspace=@hcs-web-starter/hardhat"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=20.18.3"
+  }
+}
